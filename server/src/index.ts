@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import trackRoutes from './routes/tracks.js';
+import path from 'path';
 
 dotenv.config();
 
@@ -13,13 +15,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve the uploads folder publicly
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'))); // <-- Add this
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Music App API is running' });
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/tracks', trackRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

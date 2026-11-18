@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import Library from './pages/Library';
 import Auth from './pages/Auth';
+import AudioPlayer from './components/AudioPlayer';
 import { useAuthStore } from './store/authStore';
 
 function Navigation() {
@@ -51,6 +52,9 @@ export default function App() {
             <Route path="/auth" element={<Auth />} />
           </Routes>
         </main>
+
+        {/* The Global Player */}
+        <AudioPlayer />
       </div>
     </BrowserRouter>
   );
