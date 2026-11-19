@@ -64,4 +64,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+// SEARCH TRACKS
+router.get('/search', async (req, res) => {
+  try {
+    const query = req.query.q as string;
+    
+    if (!query) {
+      return res.json([]); // Return empty array if no query
+    }
+
+    const tracks = await prisma.track.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { artist: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      take: 20, // Limit results
+    });
+
+    res.json(tracks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to search tracks' });
+  }
+});
+
 export default router;
