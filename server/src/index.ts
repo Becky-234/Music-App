@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import trackRoutes from './routes/tracks.js';
+import playlistRoutes from './routes/playlists.js';
 import path from 'path';
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tracks', trackRoutes);
+app.use('/api/playlists', playlistRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
