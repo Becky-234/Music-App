@@ -5,13 +5,12 @@ import { prisma } from '../lib/db.js';
 
 const router = Router();
 
-// Configure multer to save files to the 'uploads' folder
+// Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    // Generate a unique filename: timestamp-originalName
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
@@ -19,24 +18,30 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// UPLOAD A TRACK
-router.post('/upload', upload.single('audio'), async (req, res) => {
+// UPDATE: Add .fields() to accept both 'audio' and 'cover'
+router.post('/upload', upload.fields([
+  { name: 'audio', maxCount: 1 },
+  { name: 'cover', maxCount: 1 }
+]), async (req: any, res) => {
   try {
-    if (!req.file) {
+    // req.files is now an object with 'audio' and 'cover' arrays
+    if (!req.files || !req.files['audio']) {
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
-    // The rest of the metadata comes from the form body
     const { title, artist, duration } = req.body;
+    
+    const audioFile = req.files['audio'][0];
+    const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
 
     const track = await prisma.track.create({
       data: {
         title: title || 'Untitled',
         artist: artist || 'Unknown Artist',
         duration: parseInt(duration) || 0,
-        // Save the URL path that the frontend can access
-        audioUrl: `/uploads/${req.file.filename}`, 
-        coverUrl: null, // We'll add cover art later
+        audioUrl: `/uploads/${audioFile.filename}`, 
+        // Save the cover URL if a file was uploaded
+        coverUrl: coverFile ? `/uploads/${coverFile.filename}` : null,
       },
     });
 
@@ -47,7 +52,7 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
   }
 });
 
-// GET ALL TRACKS
+// GET ALL TRACKS (remains the same)
 router.get('/', async (req, res) => {
   try {
     const tracks = await prisma.track.findMany({

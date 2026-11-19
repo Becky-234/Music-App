@@ -53,9 +53,14 @@ export default function AudioPlayer() {
       
       {/* LEFT: Track Info */}
       <div className="flex items-center gap-4 w-1/4">
-        <div className="w-14 h-14 bg-gray-700 rounded flex items-center justify-center text-xl text-gray-400 shrink-0">
-          ♪
-        </div>
+        {/* Replace the static div with this conditional rendering */}
+        {currentTrack.coverUrl ? (
+          <img src={`${API_BASE_URL}${currentTrack.coverUrl}`} alt="cover" className="w-14 h-14 object-cover rounded shadow shrink-0" />
+        ) : (
+          <div className="w-14 h-14 bg-gray-700 rounded flex items-center justify-center text-xl text-gray-400 shrink-0">
+            ♪
+          </div>
+        )}
         <div className="truncate">
           <p className="text-sm font-bold truncate text-white">{currentTrack.title}</p>
           <p className="text-xs text-gray-400 truncate">{currentTrack.artist}</p>

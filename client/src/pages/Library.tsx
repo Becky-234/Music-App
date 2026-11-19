@@ -7,6 +7,7 @@ import { usePlaylistStore } from '../store/playlistStore';
 export default function Library() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -41,12 +42,19 @@ export default function Library() {
     formData.append('audio', file);
     formData.append('title', title);
     formData.append('artist', artist);
+    if (coverFile) {
+      formData.append('cover', coverFile);
+    }
+    
     try {
       await api.post('/tracks/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setFile(null); setTitle(''); setArtist('');
-      fetchTracks(); // Refresh list
+      setFile(null); 
+      setTitle(''); 
+      setArtist('');
+      setCoverFile(null); // <-- Reset this
+      fetchTracks(); 
     } catch (err) {
       console.error("Upload failed", err);
     } finally {
@@ -122,7 +130,12 @@ export default function Library() {
                   <input type="text" placeholder="Track Title" value={title} onChange={(e) => setTitle(e.target.value)} className="p-2 bg-black border border-gray-700 rounded focus:outline-none focus:border-green-500" required />
                   <input type="text" placeholder="Artist Name" value={artist} onChange={(e) => setArtist(e.target.value)} className="p-2 bg-black border border-gray-700 rounded focus:outline-none focus:border-green-500" required />
                 </div>
-                <input type="file" accept="audio/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-black hover:file:bg-green-400" required />
+                  <input type="file" accept="audio/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-black hover:file:bg-green-400" required />
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Cover Image (Optional)</label>
+                  <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600" />
+                </div>
+
                 <button type="submit" disabled={isUploading} className="bg-green-500 text-black font-bold py-2 px-6 rounded hover:bg-green-400 disabled:opacity-50 transition-colors">
                   {isUploading ? 'Uploading...' : 'Upload Track'}
                 </button>
@@ -143,7 +156,14 @@ export default function Library() {
                     className="flex items-center gap-4 flex-1 cursor-pointer"
                     onClick={() => isCurrent ? togglePlay() : playTrack(track)}
                   >
-                    <span className="text-gray-500 w-6 text-center">{isCurrent && isPlaying ? '⏸' : '▶'}</span>
+                    {/* Replace the play icon with the image or fallback icon */}
+                    {track.coverUrl ? (
+                      <img src={`http://localhost:4000${track.coverUrl}`} alt="cover" className="w-10 h-10 object-cover rounded shadow" />
+                    ) : (
+                      <div className="w-10 h-10 bg-[#282828] rounded flex items-center justify-center text-gray-500">
+                        ♪
+                      </div>
+                    )}
                     <div>
                       <p className={`font-bold ${isCurrent ? 'text-green-500' : 'text-white'}`}>{track.title}</p>
                       <p className="text-sm text-gray-400">{track.artist}</p>
