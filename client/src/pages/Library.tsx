@@ -1,11 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
 import { usePlaylistStore } from '../store/playlistStore';
 
+// Define types to satisfy Vercel's strict TypeScript
+interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  audioUrl: string;
+  coverUrl: string | null;
+}
+
+interface Playlist {
+  id: string;
+  name: string;
+  tracks: { track: Track }[];
+}
+
 export default function Library() {
-  const [tracks, setTracks] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -14,17 +29,12 @@ export default function Library() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   
   const user = useAuthStore((state) => state.user);
-  const { playTrack, setQueue, currentTrack, isPlaying, togglePlay } = usePlayerStore();
+  const { playTrack, setQueue, currentTrack, togglePlay } = usePlayerStore();
   
-  // Playlist Store
   const { playlists, fetchPlaylists, createPlaylist, addTrackToPlaylist } = usePlaylistStore();
 
-  useEffect(() => {
-    fetchTracks();
-    if (user) fetchPlaylists();
-  }, [user]); // Re-run when user changes
-
-  const fetchTracks = async () => {
+  // Wrap fetchTracks in useCallback so it can be safely used in useEffect
+  const fetchTracks = useCallback(async () => {
     try {
       const res = await api.get('/tracks');
       setTracks(res.data);
@@ -32,7 +42,12 @@ export default function Library() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [setQueue]);
+
+  useEffect(() => {
+    fetchTracks();
+    if (user) fetchPlaylists();
+  }, [user, fetchTracks, fetchPlaylists]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +68,7 @@ export default function Library() {
       setFile(null); 
       setTitle(''); 
       setArtist('');
-      setCoverFile(null); // <-- Reset this
+      setCoverFile(null);
       fetchTracks(); 
     } catch (err) {
       console.error("Upload failed", err);
@@ -69,13 +84,15 @@ export default function Library() {
     setNewPlaylistName('');
   };
 
-  const handlePlayPlaylist = (playlist: any) => {
+  const handlePlayPlaylist = (playlist: Playlist) => {
     if (playlist.tracks.length === 0) return;
-    // Extract just the track objects from the playlistTrack join table
-    const playlistTracks = playlist.tracks.map((pt: any) => pt.track);
+    const playlistTracks = playlist.tracks.map((pt) => pt.track);
     setQueue(playlistTracks);
     playTrack(playlistTracks[0]);
   };
+
+  // Use the environment variable for the API base URL
+  const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000';
 
   return (
     <div className="max-w-6xl mx-auto pb-24">
@@ -156,9 +173,8 @@ export default function Library() {
                     className="flex items-center gap-4 flex-1 cursor-pointer"
                     onClick={() => isCurrent ? togglePlay() : playTrack(track)}
                   >
-                    {/* Replace the play icon with the image or fallback icon */}
                     {track.coverUrl ? (
-                      <img src={`http://localhost:4000${track.coverUrl}`} alt="cover" className="w-10 h-10 object-cover rounded shadow" />
+                      <img src={`${API_BASE_URL}${track.coverUrl}`} alt="cover" className="w-10 h-10 object-cover rounded shadow" />
                     ) : (
                       <div className="w-10 h-10 bg-[#282828] rounded flex items-center justify-center text-gray-500">
                         ♪
