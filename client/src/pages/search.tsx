@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { usePlayerStore } from '../store/playerStore';
 
+// Define the Track type to satisfy TypeScript
+interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  audioUrl: string;
+  coverUrl: string | null;
+}
+
 // Custom Hook: Delays updating a value until typing has stopped
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -16,19 +25,20 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function Search() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   const debouncedQuery = useDebounce(query, 500);
   const { playTrack, currentTrack, isPlaying, togglePlay, setQueue } = usePlayerStore();
 
   useEffect(() => {
-    if (!debouncedQuery) {
-      setResults([]);
-      return;
-    }
-
+    // We wrap the logic in an async function to avoid setting state directly in the effect body
     const searchTracks = async () => {
+      if (!debouncedQuery) {
+        setResults([]);
+        return;
+      }
+
       setIsLoading(true);
       try {
         const res = await api.get(`/tracks/search?q=${encodeURIComponent(debouncedQuery)}`);
@@ -44,7 +54,7 @@ export default function Search() {
   }, [debouncedQuery]);
 
   // Play search results as a queue when a track is clicked
-  const handlePlay = (track: any) => {
+  const handlePlay = (track: Track) => {
     if (currentTrack?.id === track.id) {
       togglePlay();
     } else {
@@ -53,7 +63,7 @@ export default function Search() {
     }
   };
 
-  const API_BASE_URL = 'http://localhost:4000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000';
 
   return (
     <div className="max-w-4xl mx-auto pb-24">
