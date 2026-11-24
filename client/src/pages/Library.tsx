@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
@@ -33,8 +33,27 @@ export default function Library() {
   
   const { playlists, fetchPlaylists, createPlaylist, addTrackToPlaylist } = usePlaylistStore();
 
-  // Wrap fetchTracks in useCallback so it can be safely used in useEffect
-  const fetchTracks = useCallback(async () => {
+  useEffect(() => {
+    // Wrap in an inner async function to satisfy the React 19 linter
+    const loadData = async () => {
+      try {
+        const res = await api.get('/tracks');
+        setTracks(res.data);
+        setQueue(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+      
+      if (user) {
+        fetchPlaylists();
+      }
+    };
+
+    loadData();
+  }, [user, setQueue, fetchPlaylists]);
+
+  // Extracted function for the upload success handler
+  const refreshTracks = async () => {
     try {
       const res = await api.get('/tracks');
       setTracks(res.data);
@@ -42,12 +61,7 @@ export default function Library() {
     } catch (err) {
       console.error(err);
     }
-  }, [setQueue]);
-
-  useEffect(() => {
-    fetchTracks();
-    if (user) fetchPlaylists();
-  }, [user, fetchTracks, fetchPlaylists]);
+  };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +83,7 @@ export default function Library() {
       setTitle(''); 
       setArtist('');
       setCoverFile(null);
-      fetchTracks(); 
+      refreshTracks(); 
     } catch (err) {
       console.error("Upload failed", err);
     } finally {
